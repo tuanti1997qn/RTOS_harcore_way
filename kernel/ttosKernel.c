@@ -15,8 +15,10 @@ struct tcb{
 
 typedef struct tcb tcpType;
 
+/* define some nessessary var */
 tcpType *tcbHead;
 tcpType *CurrentPtr;
+volatile uint32_t tick;
 
 
 /* define the static function*/
@@ -44,39 +46,68 @@ static void KernerStackInit (uint32_t *StackPtr, KernelTaskHandle_t task)
 	*(--StackPtr) = 0xB;	//	R2
 	*(--StackPtr) = 0xEE;	//	R1
 	*(--StackPtr) = 0xF;	//	R0
-	--StackPtr;
-	// TestStack();
 }
 
 void TaskDefault (void)
 {
 	int a;
 	int b;
-	a = 100;
-	b = a + 100;
+	while(1)
+	{
+			a = 100;
+			b = a + 100;
+
+	}
 }
+
+
+//void SysTick_Handler(void)
+//{
+//	++tick;
+//	TestStack();
+//}
+
+
 
 /* define the extern fuction */
 
 
 void KernelInit(void)
 {
-	tcbHead = (tcpType*)calloc (1, sizeof(tcpType));
-	uint32_t DefaultTaskStack[STACK_SIZE];
-	tcbHead->StackPtr = __get_MSP();
+	tcbHead = (tcpType*)calloc (50,sizeof(uint32_t));
+	CurrentPtr = (tcpType*)calloc (50,sizeof(uint32_t));
+	uint32_t *temp= (uint32_t*)CurrentPtr;
+	CurrentPtr->StackPtr = temp+100;
+	//uint32_t DefaultTaskStack[STACK_SIZE];
+	temp= (uint32_t*)tcbHead;
+	tcbHead->StackPtr = temp+100;
 	tcbHead->priority = 0;
-	tcbHead->NextPtr = NULL;
+	tcbHead->NextPtr = tcbHead;
+	
 	
 	*(--tcbHead->StackPtr) = 1 << 24;  //	xPXR
 	*(--tcbHead->StackPtr) = (uint32_t)(TaskDefault); // PC
-	*(--tcbHead->StackPtr) = 0xD;		//	LR
+	*(--tcbHead->StackPtr) = (uint32_t)(TaskDefault);		//	LR, hold the value for the first init to go to default task
 	*(--tcbHead->StackPtr) = 0xEA;	// 	R12
 	*(--tcbHead->StackPtr) = 0xD;		//	R3
 	*(--tcbHead->StackPtr) = 0xB;		//	R2
 	*(--tcbHead->StackPtr) = 0xEE;	//	R1
 	*(--tcbHead->StackPtr) = 0xF;		//	R0
-	--tcbHead->StackPtr;
-	TestStack();
+	
+	*(--tcbHead->StackPtr) = 0xD;		//	R4
+	*(--tcbHead->StackPtr) = 0xE;	// 	R5
+	*(--tcbHead->StackPtr) = 0xA;		//	R6
+	*(--tcbHead->StackPtr) = 0xD;		//	R7
+	*(--tcbHead->StackPtr) = 0xB;	//	R8
+	*(--tcbHead->StackPtr) = 0xF;		//	R9
+	*(--tcbHead->StackPtr) = 0xE;	//	R10
+	*(--tcbHead->StackPtr) = 0xF;		//	R11
+	//CurrentPtr->NextPtr = tcbHead;
+	CurrentPtr=tcbHead;
+
+
+//	CurrentPtr = tcbHead;
+	//TestStack();
 }
 
 void KernelAddTask(KernelTaskHandle_t task, uint32_t priority)
@@ -89,5 +120,12 @@ void KernelAddTask(KernelTaskHandle_t task, uint32_t priority)
 	__enable_irq();
 }
 
+void KernelLaunch(uint32_t quanta_ms)
+{
+	SystemCoreClockUpdate();
+	SysTick_Config(SystemCoreClock/100U);
+	osSchedulerLaunch();
+	//__enable_irq();
+	
+}
 
-int32_t TCB_STACK[NUM_OF_THREAD][STACK_SIZE];
