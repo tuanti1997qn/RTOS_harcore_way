@@ -2,7 +2,7 @@
 #define __TTOSCONFIG_H__
 
 /* fix size of stack of each task */
-#define STACK_SIZE 200
+#define STACK_SIZE 20
 
 #endif
 

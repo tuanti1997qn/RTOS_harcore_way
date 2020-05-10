@@ -74,13 +74,13 @@ void TaskDefault (void)
 
 void KernelInit(void)
 {
-	tcbHead = (tcpType*)calloc (50,sizeof(uint32_t));
-	CurrentPtr = (tcpType*)calloc (50,sizeof(uint32_t));
+	tcbHead = (tcpType*)calloc (STACK_SIZE,sizeof(uint32_t));
+	CurrentPtr = (tcpType*)calloc (STACK_SIZE,sizeof(uint32_t));
 	uint32_t *temp= (uint32_t*)CurrentPtr;
-	CurrentPtr->StackPtr = temp+100;
+	CurrentPtr->StackPtr = temp+STACK_SIZE;
 	//uint32_t DefaultTaskStack[STACK_SIZE];
 	temp= (uint32_t*)tcbHead;
-	tcbHead->StackPtr = temp+100;
+	tcbHead->StackPtr = temp+STACK_SIZE;
 	tcbHead->priority = 0;
 	tcbHead->NextPtr = tcbHead;
 	
@@ -113,10 +113,30 @@ void KernelInit(void)
 void KernelAddTask(KernelTaskHandle_t task, uint32_t priority)
 {
 	__disable_irq();
-	tcpType *new_tcb = (tcpType*)calloc (1, sizeof(tcpType));
-	new_tcb->NextPtr = tcbHead;
-	tcbHead = new_tcb;
+	tcpType *new_tcb = (tcpType*)calloc (STACK_SIZE,sizeof(uint32_t));
+	uint32_t *temp= (uint32_t*)new_tcb;
+	new_tcb->StackPtr = temp+STACK_SIZE;
+	*(--new_tcb->StackPtr) = 1 << 24;  //	xPXR
+	*(--new_tcb->StackPtr) = (uint32_t)(task); // PC
+	*(--new_tcb->StackPtr) = 0xD;		//	LR, hold the value for the first init to go to default task
+	*(--new_tcb->StackPtr) = 0xEA;	// 	R12
+	*(--new_tcb->StackPtr) = 0xD;		//	R3
+	*(--new_tcb->StackPtr) = 0xB;		//	R2
+	*(--new_tcb->StackPtr) = 0xEE;	//	R1
+	*(--new_tcb->StackPtr) = 0xF;		//	R0
+	
+	*(--new_tcb->StackPtr) = 0xD;		//	R4
+	*(--new_tcb->StackPtr) = 0xE;	// 	R5
+	*(--new_tcb->StackPtr) = 0xA;		//	R6
+	*(--new_tcb->StackPtr) = 0xD;		//	R7
+	*(--new_tcb->StackPtr) = 0xB;	//	R8
+	*(--new_tcb->StackPtr) = 0xF;		//	R9
+	*(--new_tcb->StackPtr) = 0xE;	//	R10
+	*(--new_tcb->StackPtr) = 0xF;		//	R11
+	
+	new_tcb->NextPtr = CurrentPtr;
 	new_tcb->priority = priority;
+	CurrentPtr->NextPtr = new_tcb;
 	__enable_irq();
 }
 

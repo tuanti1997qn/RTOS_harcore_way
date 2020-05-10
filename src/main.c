@@ -13,11 +13,24 @@
 
 
 uint32_t stack_1[40];
+void ahihi(void)
+{
+	while(1)
+	{
+		int t,u,a,n;
+		t = 1;
+		u = t + 1;
+		a = u + 1;
+		n = a + 1;
+	}
+}
 
 int main (void)
 {
 	//Sys_init();
 	KernelInit();
+	KernelAddTask(ahihi,1);
+
 	KernelLaunch(10);
 	while(1);
 }
